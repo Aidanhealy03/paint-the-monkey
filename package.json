@@ -1,0 +1,13 @@
+{
+  "name": "paint-the-monkey",
+  "version": "1.0.0",
+  "description": "MS Paint-inspired monkey painting showdown.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
