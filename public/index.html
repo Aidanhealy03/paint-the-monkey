@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paint the Monkey</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Paint like it’s 1998.</p>
+        <h1>Paint the Monkey</h1>
+        <p class="subtitle">
+          Each round generates a randomized monkey sketch. Paint the most realistic
+          version, and let the computer judge who wins.
+        </p>
+      </div>
+      <div class="hero-card">
+        <h2>Round Setup</h2>
+        <p>
+          1. Load a randomized monkey sketch.<br />
+          2. Paint your masterpiece in MS Paint-inspired style.<br />
+          3. The computer compares realism and awards the winner.
+        </p>
+        <button id="new-reference" class="primary">New Reference</button>
+        <p class="note" id="reference-note"></p>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="reference">
+        <h2>Reference Monkey</h2>
+        <div class="reference-frame">
+          <img id="reference-image" alt="Random monkey reference" />
+          <div class="reference-meta">
+            <span id="reference-source"></span>
+            <span id="reference-title"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="canvas-panel">
+        <div class="toolbar">
+          <div class="tool-group">
+            <label for="color">Color</label>
+            <input type="color" id="color" value="#2d2a32" />
+          </div>
+          <div class="tool-group">
+            <label for="size">Brush</label>
+            <input type="range" id="size" min="2" max="30" value="8" />
+            <span id="size-value">8px</span>
+          </div>
+          <div class="tool-group">
+            <button id="brush" class="secondary active">Brush</button>
+            <button id="eraser" class="secondary">Eraser</button>
+          </div>
+          <div class="tool-group">
+            <button id="clear" class="ghost">Clear Canvas</button>
+          </div>
+        </div>
+        <div class="canvas-shell">
+          <canvas id="paint-area" width="720" height="480"></canvas>
+        </div>
+      </section>
+
+      <section class="rules">
+        <h2>How the Computer Judges</h2>
+        <ul>
+          <li>Similarity to the reference monkey sketch.</li>
+          <li>Shading realism and brush control.</li>
+          <li>Bonus points for staying within the MS Paint vibe.</li>
+        </ul>
+        <div class="cta">
+          <button id="submit-judging" class="primary">Submit for Judging</button>
+          <p class="note">Scores update based on color accuracy and feature spacing.</p>
+          <div class="scorecard" id="scorecard" aria-live="polite">
+            <p class="scorecard-title">Judging Results</p>
+            <p id="score-overall">Overall score: --</p>
+            <p id="score-color">Color accuracy: --</p>
+            <p id="score-features">Feature spacing: --</p>
+            <p class="note" id="score-note">Paint first, then submit for judging.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Every round uses a procedural monkey reference so no external images are required.
+      </p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
