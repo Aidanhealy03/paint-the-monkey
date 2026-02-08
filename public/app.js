@@ -7,10 +7,15 @@ const brushButton = document.getElementById("brush");
 const eraserButton = document.getElementById("eraser");
 const clearButton = document.getElementById("clear");
 const newReferenceButton = document.getElementById("new-reference");
+const submitJudgingButton = document.getElementById("submit-judging");
 const referenceImage = document.getElementById("reference-image");
 const referenceSource = document.getElementById("reference-source");
 const referenceTitle = document.getElementById("reference-title");
 const referenceNote = document.getElementById("reference-note");
+const scoreOverall = document.getElementById("score-overall");
+const scoreColor = document.getElementById("score-color");
+const scoreFeatures = document.getElementById("score-features");
+const scoreNote = document.getElementById("score-note");
 
 let drawing = false;
 let brushSize = Number(sizeInput.value);
@@ -179,6 +184,148 @@ const loadReference = async () => {
   }
 };
 
+const waitForImageLoad = (image) =>
+  new Promise((resolve, reject) => {
+    if (image.complete && image.naturalWidth > 0) {
+      resolve();
+      return;
+    }
+    const handleLoad = () => {
+      image.removeEventListener("load", handleLoad);
+      image.removeEventListener("error", handleError);
+      resolve();
+    };
+    const handleError = () => {
+      image.removeEventListener("load", handleLoad);
+      image.removeEventListener("error", handleError);
+      reject(new Error("Image failed to load"));
+    };
+    image.addEventListener("load", handleLoad);
+    image.addEventListener("error", handleError);
+  });
+
+const getScaledImageData = (source, size = 64) => {
+  const offscreen = document.createElement("canvas");
+  offscreen.width = size;
+  offscreen.height = size;
+  const offCtx = offscreen.getContext("2d");
+  offCtx.fillStyle = "#ffffff";
+  offCtx.fillRect(0, 0, size, size);
+  offCtx.drawImage(source, 0, 0, size, size);
+  return offCtx.getImageData(0, 0, size, size);
+};
+
+const analyzeFeatures = (imageData, width, height) => {
+  const darkThreshold = 70;
+  let leftEye = { x: 0, y: 0, count: 0 };
+  let rightEye = { x: 0, y: 0, count: 0 };
+  let mouth = { x: 0, y: 0, count: 0 };
+  let earLeft = 0;
+  let earRight = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const idx = (y * width + x) * 4;
+      const r = imageData.data[idx];
+      const g = imageData.data[idx + 1];
+      const b = imageData.data[idx + 2];
+      const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (brightness > darkThreshold) continue;
+
+      const isTop = y < height * 0.55;
+      const isBottom = y >= height * 0.55;
+      if (isTop && x < width * 0.5 && x > width * 0.15) {
+        leftEye = { x: leftEye.x + x, y: leftEye.y + y, count: leftEye.count + 1 };
+      } else if (isTop && x >= width * 0.5 && x < width * 0.85) {
+        rightEye = { x: rightEye.x + x, y: rightEye.y + y, count: rightEye.count + 1 };
+      }
+
+      if (isBottom && x > width * 0.25 && x < width * 0.75) {
+        mouth = { x: mouth.x + x, y: mouth.y + y, count: mouth.count + 1 };
+      }
+
+      if (isTop && x < width * 0.15) {
+        earLeft += 1;
+      }
+      if (isTop && x > width * 0.85) {
+        earRight += 1;
+      }
+    }
+  }
+
+  const normalize = (point) => ({
+    x: point.count ? point.x / point.count : null,
+    y: point.count ? point.y / point.count : null,
+    count: point.count
+  });
+
+  return {
+    leftEye: normalize(leftEye),
+    rightEye: normalize(rightEye),
+    mouth: normalize(mouth),
+    earLeft,
+    earRight
+  };
+};
+
+const scoreJudging = async () => {
+  await waitForImageLoad(referenceImage);
+  const referenceData = getScaledImageData(referenceImage);
+  const playerData = getScaledImageData(canvas);
+
+  let totalDiff = 0;
+  for (let i = 0; i < referenceData.data.length; i += 4) {
+    const dr = Math.abs(referenceData.data[i] - playerData.data[i]);
+    const dg = Math.abs(referenceData.data[i + 1] - playerData.data[i + 1]);
+    const db = Math.abs(referenceData.data[i + 2] - playerData.data[i + 2]);
+    totalDiff += dr + dg + db;
+  }
+
+  const maxDiff = 255 * 3 * (referenceData.data.length / 4);
+  const colorScore = Math.max(0, 100 - (totalDiff / maxDiff) * 140);
+
+  const referenceFeatures = analyzeFeatures(referenceData, 64, 64);
+  const playerFeatures = analyzeFeatures(playerData, 64, 64);
+
+  const eyeDistanceRef =
+    referenceFeatures.leftEye.x && referenceFeatures.rightEye.x
+      ? referenceFeatures.rightEye.x - referenceFeatures.leftEye.x
+      : null;
+  const eyeDistancePlayer =
+    playerFeatures.leftEye.x && playerFeatures.rightEye.x
+      ? playerFeatures.rightEye.x - playerFeatures.leftEye.x
+      : null;
+
+  const eyeSpacingScore =
+    eyeDistanceRef && eyeDistancePlayer
+      ? Math.max(0, 100 - Math.abs(eyeDistanceRef - eyeDistancePlayer) * 2.4)
+      : 45;
+
+  const mouthOffsetRef = referenceFeatures.mouth.y ?? 48;
+  const mouthOffsetPlayer = playerFeatures.mouth.y ?? 48;
+  const mouthScore = Math.max(0, 100 - Math.abs(mouthOffsetRef - mouthOffsetPlayer) * 2.2);
+
+  const earTotalRef = referenceFeatures.earLeft + referenceFeatures.earRight;
+  const earTotalPlayer = playerFeatures.earLeft + playerFeatures.earRight;
+  const earScore =
+    earTotalRef > 0
+      ? Math.max(0, 100 - (Math.abs(earTotalRef - earTotalPlayer) / earTotalRef) * 100)
+      : 50;
+
+  const featureScore = Math.max(0, Math.min(100, eyeSpacingScore * 0.4 + mouthScore * 0.35 + earScore * 0.25));
+  const overallScore = Math.max(0, Math.min(100, colorScore * 0.6 + featureScore * 0.4));
+
+  scoreOverall.textContent = `Overall score: ${overallScore.toFixed(1)}`;
+  scoreColor.textContent = `Color accuracy: ${colorScore.toFixed(1)}`;
+  scoreFeatures.textContent = `Feature spacing: ${featureScore.toFixed(1)}`;
+  scoreNote.textContent = "Resubmit after making more edits to improve your score.";
+};
+
 newReferenceButton.addEventListener("click", loadReference);
+submitJudgingButton.addEventListener("click", () => {
+  scoreJudging().catch(() => {
+    scoreNote.textContent = "Judging failed. Try loading a new reference.";
+  });
+});
 
 loadReference();

@@ -170,6 +170,25 @@ body {
   background: #fff;
 }
 
+.scorecard {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #2b2b2b;
+  background: #fef7e5;
+  font-weight: 600;
+}
+
+.scorecard-title {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scorecard .note {
+  font-weight: 400;
+}
+
 footer {
   text-align: center;
   padding: 1.5rem;

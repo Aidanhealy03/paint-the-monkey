@@ -72,8 +72,15 @@
           <li>Bonus points for staying within the MS Paint vibe.</li>
         </ul>
         <div class="cta">
-          <button class="primary">Submit for Judging (Demo)</button>
-          <p class="note">Hook this up to your judging model when ready.</p>
+          <button id="submit-judging" class="primary">Submit for Judging</button>
+          <p class="note">Scores update based on color accuracy and feature spacing.</p>
+          <div class="scorecard" id="scorecard" aria-live="polite">
+            <p class="scorecard-title">Judging Results</p>
+            <p id="score-overall">Overall score: --</p>
+            <p id="score-color">Color accuracy: --</p>
+            <p id="score-features">Feature spacing: --</p>
+            <p class="note" id="score-note">Paint first, then submit for judging.</p>
+          </div>
         </div>
       </section>
     </main>
